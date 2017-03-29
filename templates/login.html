@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block body %}
+<form method="POST">
+    {{ form.csrf_token }}
+    {% if failed %}
+        Login failed.
+    {% endif %}
+    {{ render_field(form.username) }}
+    {{ render_field(form.password) }}
+    <input type="submit" value="Login">
+</form>
+{% endblock %}
