@@ -1,8 +1,9 @@
+from functools import wraps
+
+from flask import flash, Flask, g, redirect, render_template, session, url_for
+from flask_wtf import FlaskForm
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
-from flask import Flask, g, redirect, render_template, url_for
-from flask_login import current_user, LoginManager, login_user, logout_user
-from flask_wtf import FlaskForm
 from wtforms.fields import PasswordField, StringField
 from wtforms.validators import Email, EqualTo, InputRequired, Length
 
@@ -12,8 +13,6 @@ from config import settings
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = settings.SECRET_KEY
-login_manager = LoginManager()
-login_manager.init_app(app)
 engine = create_engine(URL(**settings.DATABASE))
 
 
@@ -40,32 +39,33 @@ class LoginForm(FlaskForm):
     ])
 
 
-class User:
-    def __init__(self, username=None, password=None, email=None):
-        self.username = username
-        self.password = password
-        self.email = email
+def anonymous_required(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        username = session.get('username')
+        if username:
+            return redirect(url_for('login'))
+        else:
+            return function(*args, **kwargs)
 
-    def is_authenticated(self):
-        return db.authenticate_user(g.cursor, self)
-
-    def is_active(self):
-        return True
-
-    def is_anonymous(self):
-        return False
-
-    def get_id(self):
-        return self.username
+    return wrapper
 
 
-@login_manager.user_loader
-def load_user(username):
-    data = db.get_user(g.cursor, username)
-    if data is None:
-        return None
-    else:
-        return User(**data)
+def login_required(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        username = session.get('username')
+        if username:
+            user = db.get_user(g.cursor, username)
+            if user:
+                return function(*args, **kwargs)
+            else:
+                flash('Session exists, but user does not exist (anymore).')
+                return redirect(url_for('login'))
+        else:
+            return redirect(url_for('login'))
+
+        return wrapper
 
 
 @app.before_request
@@ -103,30 +103,26 @@ def index():
 
 
 @app.route('/register', methods=['POST', 'GET'])
+@anonymous_required
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User()
-        form.populate_obj(user)
-        db.add_user(g.cursor, user)
+        username, password, email = form.username.data, form.password.data, \
+            form.email.data
+        db.add_user(g.cursor, username, password, email)
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
 
 
 @app.route('/login', methods=['POST', 'GET'])
+@anonymous_required
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-
     form = LoginForm()
     if form.validate_on_submit():
-        user = User()
-        form.populate_obj(user)
-        if user.is_authenticated() and login_user(user):
+        username, password = form.username.data, form.password.data
+        if db.authenticate_user(g.cursor, username, password):
+            session['username'] = username
             return redirect(url_for('index'))
         else:
             return render_template('login.html', form=form, failed=True)
@@ -136,7 +132,7 @@ def login():
 
 @app.route('/logout')
 def logout():
-    logout_user()
+    session.pop('username', None)
     return redirect(url_for('index'))
 
 

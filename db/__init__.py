@@ -1,13 +1,13 @@
 USER_FIELDS = ['username', 'password', 'email']
 
 
-def authenticate_user(cursor, user):
+def authenticate_user(cursor, username, password):
     query = """SELECT *
                FROM Users U
                WHERE U.username=%s AND
                     U.password=%s
                ;"""
-    cursor.execute(query, [user.username, user.password])
+    cursor.execute(query, [username, password])
     users = cursor.fetchall()
     return len(users) != 0
 
@@ -26,9 +26,9 @@ def get_user(cursor, username):
         return dict(zip(USER_FIELDS, user_data))
 
 
-def add_user(cursor, user):
+def add_user(cursor, username, password, email):
     query = """INSERT INTO
                Users (username, password, email)
                VALUES (%s, %s, %s)
                ;"""
-    cursor.execute(query, [user.username, user.password, user.email])
+    cursor.execute(query, [username, password, email])
