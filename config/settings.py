@@ -5,3 +5,5 @@ DATABASE = {
     'password': '1566',
     'database': 'proj1part2'
 }
+
+SECRET_KEY = 'dapper_databasers_2k17'
