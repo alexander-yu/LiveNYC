@@ -10,6 +10,9 @@
     {% endblock %}
 </head>
 <body>
+    {% if username %}
+        Hello, {{ username }}.
+    {% endif %}
     {% block body %}{% endblock %}
 
     <!--JS scripts-->
