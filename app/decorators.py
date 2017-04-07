@@ -22,7 +22,7 @@ def login_required(function):
     def wrapper(*args, **kwargs):
         username = session.get('username')
         if username:
-            user = db.get_user(g.cursor, username)
+            user = db.get_user(g.conn, username)
             if user:
                 return function(*args, **kwargs)
             else:
@@ -31,4 +31,4 @@ def login_required(function):
         else:
             return redirect(url_for('login'))
 
-        return wrapper
+    return wrapper
