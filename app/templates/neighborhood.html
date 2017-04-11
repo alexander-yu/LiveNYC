@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block title %}{{ neighborhood_name|title }} - {{ borough_name|title }}{% endblock %}
+
+{% block body %}
+    {{ neighborhood_info }} <br>
+
+    {% for school in get_schools() %}
+        {{ school }} <br>
+    {% endfor %}
+
+    {% for park in get_parks() %}
+        {{ park }} <br>
+    {% endfor %}
+
+    {% for restaurant in get_restaurants() %}
+        {{ restaurant }} <br>
+    {% endfor %}
+
+    {% if logged_in %}
+        <form method="POST">
+            {{ form.csrf_token }}
+            {{ render_field(form.rating) }}
+            {{ render_field(form.content) }}
+            <br><input type="submit" value="Submit Review">
+        </form>
+    {% endif %}
+
+    {% for review in get_reviews() %}
+        {{ review }} <br>
+    {% endfor %}
+{% endblock %}
