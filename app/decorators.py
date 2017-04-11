@@ -1,15 +1,15 @@
 from functools import wraps
 
-from flask import flash, g, redirect, session, url_for
+from flask import g, redirect, request, session, url_for
 
-import db
+from .auth import authenticate
 
 
 def anonymous_required(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
-        username = session.get('username')
-        if username:
+        user = authenticate(g.conn, session)
+        if user:
             return redirect(url_for('index'))
         else:
             return function(*args, **kwargs)
@@ -20,15 +20,10 @@ def anonymous_required(function):
 def login_required(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
-        username = session.get('username')
-        if username:
-            user = db.get_user(g.cursor, username)
-            if user:
-                return function(*args, **kwargs)
-            else:
-                flash('Session exists, but user does not exist (anymore).')
-                return redirect(url_for('login'))
+        user = authenticate(g.conn, session)
+        if user:
+            return function(*args, **kwargs)
         else:
-            return redirect(url_for('login'))
+            return redirect(url_for('login', next=request.endpoint))
 
-        return wrapper
+    return wrapper

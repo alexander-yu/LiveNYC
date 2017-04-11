@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ borough_name|title }}{% endblock %}
+
+{% block body %}
+    {{ borough_info }} <br>
+    {% for neighborhood_name in get_neighborhood_names() %}
+        {{ neighborhood_name }} <br>
+        {{ get_neighborhood_info(neighborhood_name) }} <br>
+    {% endfor %}
+{% endblock %}

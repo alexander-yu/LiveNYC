@@ -1,4 +1,4 @@
-from flask import Flask, g
+from flask import Flask, g, session
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 
@@ -9,12 +9,16 @@ app.config['SECRET_KEY'] = settings.SECRET_KEY
 engine = create_engine(URL(**settings.DATABASE))
 
 
+@app.context_processor
+def inject_username():
+    return {'username': session.get('username')}
+
+
 @app.before_request
 def before_request():
     try:
         g.conn = engine.connect()
         g.transaction = g.conn.begin()
-        g.cursor = g.conn.connection.cursor()
     except:
         import traceback
         traceback.print_exc()
@@ -23,7 +27,6 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    g.cursor.close()
     g.transaction.commit()
     g.conn.close()
     return response
@@ -31,7 +34,6 @@ def after_request(response):
 
 @app.teardown_request
 def teardown_request(exception):
-    g.cursor.close()
     g.conn.close()
 
     if exception is not None:
