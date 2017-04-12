@@ -67,6 +67,6 @@ class ReviewForm(FlaskForm):
         (4, '4'),
         (5, '5')
     ], coerce=int, validators=[InputRequired()])
-    content = TextAreaField('content', validators=[
+    content = TextAreaField('review', validators=[
         Length(max=1000), Optional()
     ])

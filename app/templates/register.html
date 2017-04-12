@@ -4,12 +4,20 @@
 {% block title %}Register{% endblock %}
 
 {% block body %}
-<form method="POST">
-    {{ form.csrf_token }}
-    {{ render_field(form.username) }}
-    {{ render_field(form.password) }}
-    {{ render_field(form.confirm) }}
-    {{ render_field(form.email) }}
-    <input type="submit" value="Register">
-</form>
+<div align="center">
+    <h1>Register</h1>
+    {% if already_exists %}
+        <div class="errors">
+            User already exists.
+        </div>
+    {% endif %}
+    <form id="register" method="POST">
+        {{ form.csrf_token }}
+        {{ render_field(form.username) }}
+        {{ render_field(form.password) }}
+        {{ render_field(form.confirm) }}
+        {{ render_field(form.email) }}
+        <br><input type="submit" value="Register">
+    </form>
+</div>
 {% endblock %}

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import abort, g, redirect, render_template, session, url_for
+from flask import abort, g, redirect, render_template, request, session, url_for
 
 import db
 
@@ -17,7 +17,10 @@ def page_not_found(e):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    def get_borough_names():
+        return db.get_borough_names(g.conn)
+
+    return render_template('index.html', get_borough_names=get_borough_names)
 
 
 @app.route('/profile')
@@ -25,7 +28,9 @@ def index():
 def profile():
     favorites = db.get_favorites(g.conn, session['username'])
     reviews = db.get_reviews_by_user(g.conn, session['username'])
-    return render_template('profile.html', favorites=favorites, reviews=reviews)
+    return render_template('profile.html',
+                           favorites=favorites,
+                           reviews=reviews)
 
 
 @app.route('/register', methods=['POST', 'GET'])
@@ -36,10 +41,14 @@ def register():
     if form.validate_on_submit():
         username, password, email = form.username.data, form.password.data, \
             form.email.data
-        db.add_user(g.conn, username, password, email)
-        return redirect(url_for('login'))
+
+        if db.get_user(g.conn, username):
+            return render_template('register.html', form=form, already_exists=True)
+        else:
+            db.add_user(g.conn, username, password, email)
+            return redirect(url_for('login'))
     else:
-        return render_template('register.html', form=form)
+        return render_template('register.html', form=form, already_exists=False)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -86,7 +95,6 @@ def borough(borough_name):
 
 @app.route('/neighborhood/<neighborhood_name>', methods=['POST', 'GET'])
 def neighborhood(neighborhood_name):
-    # TODO: Add functionality for starring/unstarring favorites
     neighborhood_info = db.get_neighborhood_info(g.conn, neighborhood_name)
     if neighborhood_info is None:
         abort(404)
@@ -95,7 +103,7 @@ def neighborhood(neighborhood_name):
     logged_in = user is not None
     form = ReviewForm()
 
-    if form.validate_on_submit():
+    if logged_in and form.validate_on_submit():
         content = form.content.data
         rating = form.rating.data
         time_written = datetime.now()
@@ -107,11 +115,31 @@ def neighborhood(neighborhood_name):
         username = user['username']
 
         db.add_review(g.conn, neighborhood_name, username, review_data)
-        return redirect(url_for('neighborhood'),
-                        neighborhood_name=neighborhood_name)
+        return redirect(url_for('neighborhood',
+                                neighborhood_name=neighborhood_name))
+
+    elif request.method == 'POST' and logged_in:
+        username = user['username']
+        if request.form['is_favorite'] == 'True':
+            db.remove_favorite(g.conn, username, neighborhood_name)
+        else:
+            db.add_favorite(g.conn, username, neighborhood_name)
+
+        return redirect(url_for('neighborhood',
+                                neighborhood_name=neighborhood_name))
+
     else:
-        borough_name = \
-            db.get_borough_name_by_neighborhood(g.conn, neighborhood_name)
+        borough_name = db \
+            .get_borough_name_by_neighborhood(g.conn,
+                                              neighborhood_name)['borough']
+
+        def is_favorite():
+            if logged_in:
+                username = user['username']
+                return db.is_favorite(g.conn, username, neighborhood_name)
+
+            else:
+                return None
 
         def get_schools():
             return db.get_schools(g.conn, neighborhood_name)
@@ -126,12 +154,13 @@ def neighborhood(neighborhood_name):
             return db.get_reviews_by_neighborhood(g.conn, neighborhood_name)
 
         return render_template('neighborhood.html',
-                            neighborhood_name=neighborhood_name,
-                            neighborhood_info=neighborhood_info,
-                            borough_name=borough_name,
-                            get_schools=get_schools,
-                            get_parks=get_parks,
-                            get_restaurants=get_restaurants,
-                            get_reviews=get_reviews,
-                            logged_in=logged_in,
-                            form=form)
+                               neighborhood_name=neighborhood_name,
+                               neighborhood_info=neighborhood_info,
+                               borough_name=borough_name,
+                               get_schools=get_schools,
+                               get_parks=get_parks,
+                               get_restaurants=get_restaurants,
+                               get_reviews=get_reviews,
+                               logged_in=logged_in,
+                               form=form,
+                               is_favorite=is_favorite)

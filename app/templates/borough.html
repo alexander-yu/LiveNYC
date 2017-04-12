@@ -3,9 +3,64 @@
 {% block title %}{{ borough_name|title }}{% endblock %}
 
 {% block body %}
-    {{ borough_info }} <br>
-    {% for neighborhood_name in get_neighborhood_names() %}
-        {{ neighborhood_name }} <br>
-        {{ get_neighborhood_info(neighborhood_name) }} <br>
+    <h1 align="center">
+        {{ borough_name|title }}
+    </h1>
+    <div align="center">
+            <table>
+                <tr>
+                    <th>County Name</th>
+                    <th>Year Incorporated</th>
+                </tr>
+                <tr>
+                    <td>{{ borough_info['county_name'] }}</td>
+                    <td>{{ borough_info['year_incorporated'] }}</td>
+                </tr>
+            </table>
+    </div><br>
+
+    <hr>
+
+    <h2 align="center">
+        Neighborhoods
+    </h2>
+    <div align="center">
+    {% for neighborhood in get_neighborhood_names() %}
+        {% set neighborhood_name = neighborhood['neighborhood'] %}
+        {% set neighborhood_info = get_neighborhood_info(neighborhood_name) %}
+        <div class="dropdown">
+            <button class="dropbtn"><a href="{{ url_for('neighborhood', neighborhood_name=neighborhood_name) }}">{{ neighborhood_name }}</a></button>
+            <div class="dropdown-content">
+                <table>
+                    <tr>
+                        <th>Population</th>
+                        <th>Mean Income</th>
+                        <th>Subways</th>
+                    </tr>
+                    <tr>
+                        <td>{{ "{:,}".format(neighborhood_info['population']) }}</td>
+                        <td>{{ "${:,.2f}".format(neighborhood_info['mean_income']) }}</td>
+                        <td>
+                            {% for subway in neighborhood_info['subways'] %}
+                                {% set subway_name = subway['subway'] %}
+                                {% if subway_name[-1] == 'X' %}
+                                    {% set subway_name = subway_name[:-1] %}
+                                {% endif %}
+                                <svg width="20" height="20">
+                                    {% if subway['is_express'] %}
+                                        <polygon points="0,10 10,20 20,10 10,0" fill="{{ subway['color'] }}" />
+                                        <text fill="#ffffff" font-size="80%" text-anchor="middle" x="50%" y="50%" dy=".3em">{{ subway_name }}</text>
+                                    {% else %}
+                                        <circle cx="50%" cy="50%" r="50%" fill="{{ subway['color'] }}" />
+                                        <text fill="#ffffff" font-size="100%" text-anchor="middle" x="50%" y="50%" dy=".3em">{{ subway_name }}</text>
+                                    {% endif %}
+                                </svg>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div><br>
     {% endfor %}
+    </div>
 {% endblock %}

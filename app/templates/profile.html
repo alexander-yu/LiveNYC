@@ -3,6 +3,32 @@
 {% block title %}{{ username }}{% endblock %}
 
 {% block body %}
-    {{ favorites }}
-    {{ reviews }}
+    <h1 align="center">{{ username }}'s Profile</h1>
+    <h2 align="center">Favorites</h2>
+    <div align="center">
+        {% for favorite in favorites %}
+            <a href="{{ url_for('neighborhood', neighborhood_name=favorite['neighborhood']) }}">
+                {{ favorite['neighborhood'] }}
+            </a> - <a href="{{ url_for('borough', borough_name=favorite['borough']) }}">
+                {{ favorite['borough'] }}
+            </a>
+        {% endfor %}
+    </div><br>
+
+    <hr>
+
+    <div>
+        <h2 align="center">Reviews</h2>
+        {% for review in reviews %}
+            <div class="review">                
+                <a href="{{ url_for('neighborhood', neighborhood_name=review['neighborhood']) }}">
+                    {{ review['neighborhood'] }}
+                </a><br>
+                {{ review['time_written'].strftime('On %B %d, %Y at %I:%M:%S %p %Z') }}<br>
+                Rating: {{ review['rating'] }}
+                <hr>
+                {{ review['content'] }}
+            </div>
+        {% endfor %}
+    </div>
 {% endblock %}

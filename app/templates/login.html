@@ -4,13 +4,18 @@
 {% block title %}Login{% endblock %}
 
 {% block body %}
-<form method="POST">
-    {{ form.csrf_token }}
+<div align="center">
+    <h1>Login</h1>
     {% if failed %}
-        Login failed.
+        <div class="errors">
+            Incorrect username or password.
+        </div>
     {% endif %}
-    {{ render_field(form.username) }}
-    {{ render_field(form.password) }}
-    <br><input type="submit" value="Login">
-</form>
+    <form id="login" method="POST">
+        {{ form.csrf_token }}
+        {{ render_field(form.username) }}
+        {{ render_field(form.password) }}
+        <br><input type="submit" value="Login">
+    </form>
+</div>
 {% endblock %}
