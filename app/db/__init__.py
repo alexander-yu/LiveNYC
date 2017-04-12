@@ -6,7 +6,7 @@ def authenticate_user(connection, username, password):
                ;"""
     result = connection.execute(query, [username, password])
     user_count = result.first()
-    return user_count > 0
+    return user_count['count'] > 0
 
 
 def get_user(connection, username):
@@ -27,14 +27,12 @@ def add_user(connection, username, password, email):
 
 
 def get_reviews_by_user(connection, username):
-    query = """SELECT R1.time_written, R1.content, R1.rating, L.neighborhood,
-                   L.borough
+    query = """SELECT R1.time_written, R1.content, R1.rating, R2.neighborhood
                FROM Review R1 INNER JOIN Reviewed_By R2
                        ON R1.username=R2.username AND
                        R1.time_written=R2.time_written
-                   INNER JOIN Located_In L ON R2.neighborhood=L.neighborhood
                WHERE R1.username=%s
-               ORDER BY R1.time_written
+               ORDER BY R1.time_written DESC
                ;"""
     result = connection.execute(query, [username])
     return result.fetchall()
@@ -46,7 +44,7 @@ def get_reviews_by_neighborhood(connection, neighborhood):
                    ON R1.username=R2.username AND
                    R1.time_written=R2.time_written
                WHERE R2.neighborhood=%s
-               ORDER BY R1.time_written
+               ORDER BY R1.time_written DESC
                ;"""
     result = connection.execute(query, [neighborhood])
     return result.fetchall()
@@ -67,8 +65,30 @@ def add_favorite(connection, username, neighborhood):
                Favorites (username, neighborhood)
                VALUES (%s, %s)
                ;"""
+    connection.execute(query, [username, neighborhood.title()])
+
+
+def is_favorite(connection, username, neighborhood):
+    query = """SELECT * FROM Favorites F
+               WHERE F.username=%s AND F.neighborhood=%s
+               ;"""
+    result = connection.execute(query, [username, neighborhood])
+    return result.first() is not None
+
+
+def add_favorite(connection, username, neighborhood):
+    query = """INSERT INTO
+               Favorites (username, neighborhood)
+               VALUES (%s, %s)
+               ;"""
     connection.execute(query, [username, neighborhood])
 
+
+def remove_favorite(connection, username, neighborhood):
+    query = """DELETE FROM Favorites F
+               WHERE F.username=%s AND F.neighborhood=%s 
+               ;"""
+    connection.execute(query, [username, neighborhood])
 
 def add_review(connection, neighborhood, username, review_data):
     rating, time_written, content = review_data['rating'], \
@@ -83,7 +103,7 @@ def add_review(connection, neighborhood, username, review_data):
                Reviewed_By (username, time_written, neighborhood)
                VALUES (%s, %s, %s)
                ;"""
-    connection.execute(query, [username, time_written, neighborhood])
+    connection.execute(query, [username, time_written, neighborhood.title()])
 
 
 def get_borough_info(connection, borough):
@@ -102,6 +122,14 @@ def get_borough_name_by_neighborhood(connection, neighborhood):
                ;"""
     result = connection.execute(query, [neighborhood])
     return result.first()
+
+
+def get_borough_names(connection):
+    query = """SELECT B.name
+               FROM Borough B
+               ;"""
+    result = connection.execute(query)
+    return result.fetchall()
 
 
 def get_neighborhood_names(connection, borough):

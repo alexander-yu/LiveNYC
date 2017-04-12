@@ -4,30 +4,149 @@
 {% block title %}{{ neighborhood_name|title }} - {{ borough_name|title }}{% endblock %}
 
 {% block body %}
-    {{ neighborhood_info }} <br>
-
-    {% for school in get_schools() %}
-        {{ school }} <br>
-    {% endfor %}
-
-    {% for park in get_parks() %}
-        {{ park }} <br>
-    {% endfor %}
-
-    {% for restaurant in get_restaurants() %}
-        {{ restaurant }} <br>
-    {% endfor %}
+    <h1 align="center">
+        {{ neighborhood_name|title }}
+    </h1>
+    <div align="center">
+        <table>
+            <tr>
+                <th>Borough</th>
+                <th>Population</th>
+                <th>Mean Income</th>
+                <th>Subways</th>
+            </tr>
+            <tr>
+                <td><a href="{{ url_for('borough', borough_name=borough_name) }}">{{ borough_name }}</a></td>
+                <td>{{ "{:,}".format(neighborhood_info['population']) }}</td>
+                <td>{{ "${:,.2f}".format(neighborhood_info['mean_income']) }}</td>
+                <td>
+                    {% for subway in neighborhood_info['subways'] %}
+                        {% set subway_name = subway['subway'] %}
+                        {% if subway_name[-1] == 'X' %}
+                            {% set subway_name = subway_name[:-1] %}
+                        {% endif %}
+                        <svg width="20" height="20">
+                            {% if subway['is_express'] %}
+                                <polygon points="0,10 10,20 20,10 10,0" fill="{{ subway['color'] }}" />
+                                <text fill="#ffffff" font-size="80%" text-anchor="middle" x="50%" y="50%" dy=".3em">{{ subway_name }}</text>
+                            {% else %}
+                                <circle cx="50%" cy="50%" r="50%" fill="{{ subway['color'] }}" />
+                                <text fill="#ffffff" font-size="100%" text-anchor="middle" x="50%" y="50%" dy=".3em">{{ subway_name }}</text>
+                            {% endif %}
+                        </svg>
+                    {% endfor %}
+                </td>
+            </tr>
+        </table>
+    </div><br>
 
     {% if logged_in %}
-        <form method="POST">
-            {{ form.csrf_token }}
-            {{ render_field(form.rating) }}
-            {{ render_field(form.content) }}
-            <br><input type="submit" value="Submit Review">
-        </form>
+        <div align="center">        
+            <form method="POST">
+                {% set is_favorite_bool = is_favorite() %}
+                {% set label = "Favorite" if is_favorite_bool else "Remove Favorite" %}
+                <input type="submit" value="{{ label }}">
+                <input type="hidden" name="is_favorite" value="{{ is_favorite_bool }}">
+            </form>
+        </div><br>
     {% endif %}
 
+    <hr>
+
+    <div class="tricolumn">
+        <div align="center">
+            <h2>Schools</h2>
+            {% for school in get_schools() %}
+                <div class="dropdown">
+                    <button class="dropbtn">{{ school['name'] }}</button>
+                    <div class="dropdown-content">
+                        <table>
+                            <tr>
+                                <th>Place ID</th>
+                                <th>Mean Cost</th>
+                                <th>School Type</th>
+                            </tr>
+                            <tr>
+                                <td>{{ school['place_id'] }}</td>
+                                <td>{{ "${:,.2f}".format(school['mean_cost']) }}</td>
+                                <td>{{ school['school_type'] }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div><br>
+            {% endfor %}
+        </div>
+        <div align="center">
+            <h2>Parks</h2>
+            {% for park in get_parks() %}
+                <div class="dropdown">
+                    <button class="dropbtn">{{ park['name'] }}</button>
+                    <div class="dropdown-content">
+                        <table>
+                            <tr>
+                                <th>Place ID</th>
+                                <th>Acres</th>
+                                <th>Is Public</th>
+                            </tr>
+                            <tr>
+                                <td>{{ park['place_id'] }}</td>
+                                <td>{{ "{:,}".format(park['acres']) }}</td>
+                                <td>{{ "Yes" if park['is_public'] else "No" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div><br>
+            {% endfor %}
+        </div>
+        <div align="center">
+            <h2>Restaurants</h2>
+            {% for restaurant in get_restaurants() %}
+                <div class="dropdown">
+                    <button class="dropbtn">{{ restaurant['name'] }}</button>
+                    <div class="dropdown-content">
+                        <table>
+                            <tr>
+                                <th>Place ID</th>
+                                <th>Cost</th>
+                                <th>Type</th>
+                            </tr>
+                            <tr>
+                                <td>{{ restaurant['place_id'] }}</td>
+                                <td>{{ '$' * restaurant['cost_rating'] }}</td>
+                                <td>{{ restaurant['restaurant_type'] }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div><br>
+            {% endfor %}
+        </div>
+    </div><br>
+
+    {% if logged_in %}
+        <div align="center">
+            <hr>
+            <h2>Write a Review</h2>
+            <form id="review" method="POST">
+                {{ form.csrf_token }}
+                <div class="rating">
+                    {{ render_field(form.rating) }}
+                </div>
+
+                {{ render_field(form.content) }}
+                <br><input type="submit" value="Submit Review">
+            </form><br>
+            <hr>
+        </div>
+    {% endif %}
+
+    <h2 align="center">Reviews</h2>
     {% for review in get_reviews() %}
-        {{ review }} <br>
+        <div class="review">
+            By {{ review['username'] }}<br>
+            {{ review['time_written'].strftime('on %B %d, %Y at %I:%M:%S %p %Z') }}<br>
+            Rating: {{ review['rating'] }}
+            <hr>
+            {{ review['content'] }}
+        </div>
     {% endfor %}
 {% endblock %}
