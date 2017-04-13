@@ -44,7 +44,7 @@
         <div align="center">        
             <form method="POST">
                 {% set is_favorite_bool = is_favorite() %}
-                {% set label = "Favorite" if is_favorite_bool else "Remove Favorite" %}
+                {% set label = "Remove Favorite" if is_favorite_bool else "Favorite" %}
                 <input type="submit" value="{{ label }}">
                 <input type="hidden" name="is_favorite" value="{{ is_favorite_bool }}">
             </form>
