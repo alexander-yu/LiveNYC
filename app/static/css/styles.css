@@ -1,8 +1,8 @@
-element {
+:root {
     --main-bg-color: #4CAF50;
 }
 
-element {
+:root {
     --hover-bg-color: #3E8E41;
 }
 
